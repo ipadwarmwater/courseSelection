@@ -54,6 +54,7 @@ def logout():
 def home():
     results = """
     <p><a href="/browse">檢索課程</a></p>
+    <p><a href="/elective_courses">可選課表</a></p>
     <p><a href="/student_table_show">查詢課表</a></p>
     <p><a href="/student_table_deleteshow">退選課程</a></p>
     <form action="/logout" method="post">
@@ -102,6 +103,47 @@ def search():
     
     return table
 
+#可選課表
+@app.route('/elective_courses', methods=['GET', 'POST'])
+def elective():
+    if 'student_id' not in session:
+        return redirect("/")
+        
+    student_id = session['student_id']
+
+    # 建立資料庫連線
+    conn = connect_to_database()
+        
+    table = """"""
+
+    # 創建游標
+    cursor = conn.cursor()
+        
+    # 查詢所有課程表
+    query = "SELECT course_id, course_name, department, grade, credits, capacity, requirement_course FROM course WHERE department = (SELECT department FROM student WHERE student_id = %s) OR department = 'General Education';"
+    cursor.execute(query, (student_id,))
+    courses = cursor.fetchall()
+
+    # 生成HTML表格來顯示課程表
+    table += "<table border='1'><tr><th>課程 ID</th><th>課程名稱</th><th>科系</th><th>年級</th><th>學分</th><th>人數上限</th><th>人數</th><th>是否為必修</th><th></th></tr>"
+    for course in courses:
+        table += "<tr>"
+        for data in course:
+            table += "<td>{}</td>".format(data)
+            
+        # 在每個課程資料列後面添加一個按鈕
+        table += "<td><form action='/enroll' method='post'><input type='hidden' name='student_id' value='{}'><input type='hidden' name='course_id' value='{}'><input type='submit' value='選課'></form></td>".format(student_id, course[0])
+
+        table += "</tr>"
+
+    table += "</table>"
+
+    # 關閉游標和資料庫連線
+    cursor.close()
+    conn.close()
+        
+    return table
+
 
 @app.route('/enroll', methods=['POST'])
 def enroll():
@@ -119,7 +161,7 @@ def enroll():
     # 創建游標
     cursor = conn.cursor()
 
-    result = '''<p><a href="/">回首頁</a></br><a href="/browse">回選課</a></p>'''
+    result = '''<p><a href="/">回首頁</a></br><a href="/browse">回課程檢索</a></br><a href="/elective_courses">回可選課表</a></p>'''
     
     # 檢查是否衝堂
     query_student_schedule = """

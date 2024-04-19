@@ -147,6 +147,11 @@ INSERT INTO course (course_id, course_name, department, grade, credits, capacity
 (908, '計量經濟學', 'Economics', 2, 3, 5, 0),
 (909, '環境經濟學', 'Economics', 3, 3, 5, 0);
 
+INSERT INTO course (course_id, course_name, department, grade, credits, capacity, requirement_course) VALUES
+(910, '高效休息法', 'General Education', 0, 8, 10, 0),
+(911, '閱讀越快樂', 'General Education', 0, 4, 10, 0),
+(912, '誇誇學導論', 'General Education', 0, 5, 10, 0);
+
 CREATE TABLE course_schedule (
     course_id INT,
     weekday INT,
