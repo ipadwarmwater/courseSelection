@@ -44,7 +44,7 @@ def login():
 
 @app.route('/logout', methods=['GET', 'POST'])
 def logout():
-    # 清除会话中的用户信息
+    
     session.pop('student_id', None)
     session.pop('logged_in', None)
 
@@ -121,6 +121,33 @@ def enroll():
 
     result = '''<p><a href="/">回首頁</a></br><a href="/browse">回選課</a></p>'''
     
+    # 檢查是否衝堂
+    query_student_schedule = """
+        SELECT cs.weekday, cs.period 
+        FROM course_schedule cs 
+        INNER JOIN course_enroll ce ON cs.course_id = ce.course_id 
+        WHERE ce.student_id = %s;
+    """
+    cursor.execute(query_student_schedule, (student_id,))
+    student_schedule = cursor.fetchall()
+
+    query_course_schedule = """
+        SELECT weekday, period 
+        FROM course_schedule 
+        WHERE course_id = %s;
+    """
+    cursor.execute(query_course_schedule, (course_id,))
+    course_schedule = cursor.fetchall()
+
+    # 比較學生已選課程時間與欲選課程時間
+    for student_time in student_schedule:
+        for course_time in course_schedule:
+            if student_time == course_time:
+                cursor.close()
+                conn.close()
+                result+= "錯誤：衝堂 "+str(student_time[0]+1)
+                return result
+
     # 檢查學生是否已選這堂課
     query_select = "SELECT COUNT(*) FROM course_enroll WHERE course_id = %s AND student_id = %s"
     cursor.execute(query_select, (course_id, student_id))
@@ -163,7 +190,7 @@ def enroll():
     cursor.execute(query_course_department, (course_id,))
     course_department = cursor.fetchone()[0]
 
-    if student_department != course_department:
+    if student_department != course_department and course_department!= 'General Eudcation':
         cursor.close()
         conn.close()
         
@@ -375,6 +402,7 @@ def withdraw_course():
 
     result += "退選成功"
     return result
+
 
 if __name__ == '__main__':
     app.run(debug=True)
