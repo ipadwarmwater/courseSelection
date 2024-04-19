@@ -21,7 +21,7 @@ def logout():
 @app.route('/home')
 def home():
     results = """
-    <p><a href="/search">檢索課程</a></p>
+    <p><a href="/browse">檢索課程</a></p>
     <p><a href="/student_table_show">查詢課表</a></p>
     <p><a href="/student_table_deleteshow">退選課程</a></p>
     <form action="/logout" method="post">
@@ -61,7 +61,7 @@ def login():
     conn.close()
     return "登入失敗，非本校學生"
 
-@app.route('/search', methods=['GET', 'POST'])
+@app.route('/browse', methods=['GET', 'POST'])
 def search():
     if 'student_id' not in session:
         return redirect("/")
@@ -118,7 +118,7 @@ def enroll():
     # 創建游標
     cursor = conn.cursor()
 
-    result = '''<p><a href="/">回首頁</a></br><a href="/search">回選課</a></p>'''
+    result = '''<p><a href="/">回首頁</a></br><a href="/browse">回選課</a></p>'''
     
     # 檢查學生是否已選這堂課
     query_select = "SELECT COUNT(*) FROM course_enroll WHERE course_id = %s AND student_id = %s"
