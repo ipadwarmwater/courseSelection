@@ -166,6 +166,7 @@ def enroll():
     if student_department != course_department:
         cursor.close()
         conn.close()
+        
         result+=  "錯誤：學生和課程分屬不同系所"
         return result
 
@@ -174,9 +175,16 @@ def enroll():
     cursor.execute(query_enroll, (student_id, course_id))
     conn.commit()
 
+    #計算學分數
+
+    query_s_credit = "UPDATE student INNER JOIN (SELECT student.student_id, SUM(course.credits) AS total_credits FROM student INNER JOIN course_enroll ON student.student_id = course_enroll.student_id INNER JOIN course ON course_enroll.course_id = course.course_id GROUP BY student.student_id ) AS new_credits ON student.student_id = new_credits.student_id SET student.credit = new_credits.total_credits;"
+    cursor.execute(query_s_credit)
+    conn.commit()
+
     cursor.close()
     conn.close()
 
+    
     result+=  "成功：課程加選成功"
     return result
 
@@ -193,10 +201,10 @@ def student_table_show():
     conn = connect_to_database()
     
     # 欲查詢的 query 指令
-    query = "SELECT * FROM student where student_id = %s;" % student_id
+    query = "SELECT * FROM student WHERE student_id = %s;"
     # 執行查詢
     cursor = conn.cursor()
-    cursor.execute(query)
+    cursor.execute(query, (student_id,))
     student_data = cursor.fetchall()
     table+='<tr>'
     for des in student_data:
@@ -209,8 +217,8 @@ def student_table_show():
         FROM course_schedule 
         INNER JOIN course ON course_schedule.course_id = course.course_id 
         WHERE course_schedule.course_id IN (SELECT course_id FROM course_enroll WHERE student_id = %s);
-        """ % student_id
-        cursor.execute(query)
+        """ 
+        cursor.execute(query, (student_id,))
         
         timetable = [["" for _ in range(8)] for _ in range(10)]
         table += " <table border='1'><tr><th>星期</th><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th><th>日</th></tr>"
@@ -251,10 +259,10 @@ def student_table_deleteshow():
     conn = connect_to_database()
 
     # 欲查詢的 query 指令
-    query = "SELECT * FROM student where student_id = %s;" % student_id
+    query = "SELECT * FROM student WHERE student_id = %s;"
     # 執行查詢
     cursor = conn.cursor()
-    cursor.execute(query)
+    cursor.execute(query, (student_id,))
     student_data = cursor.fetchall()
     table+='<tr>'
     for des in student_data:
@@ -268,8 +276,8 @@ def student_table_deleteshow():
         INNER JOIN course ON course_schedule.course_id = course.course_id 
         INNER JOIN course_enroll ce ON course_schedule.course_id = ce.course_id
         WHERE ce.student_id = %s;
-        """ % student_id
-        cursor.execute(query)
+        """ 
+        cursor.execute(query, (student_id,))
 
         timetable = [["" for _ in range(8)] for _ in range(10)]
         table += " <table border='1'><tr><th>星期</th><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th><th>日</th></tr>"
@@ -347,7 +355,7 @@ def withdraw_course():
         result += "Warning: This course is a required course. Are you sure you want to withdraw?"
 
     # 從課程選課表中刪除該課程
-    query_withdraw = "DELETE FROM course_enroll WHERE student_id =%sAND course_id = %s;"
+    query_withdraw = "DELETE FROM course_enroll WHERE student_id =%s AND course_id = %s;"
     cursor.execute(query_withdraw, (student_id, course_id))
     conn.commit()
 
