@@ -10,26 +10,6 @@ def connect_to_database():
                            passwd="test1234",
                            db="courseselection")
 
-@app.route('/logout', methods=['GET', 'POST'])
-def logout():
-    # 清除会话中的用户信息
-    session.pop('student_id', None)
-    session.pop('logged_in', None)
-
-    return redirect('/')
-
-@app.route('/home')
-def home():
-    results = """
-    <p><a href="/browse">檢索課程</a></p>
-    <p><a href="/student_table_show">查詢課表</a></p>
-    <p><a href="/student_table_deleteshow">退選課程</a></p>
-    <form action="/logout" method="post">
-        <input type="submit" value="Logout">
-    </form>
-    """
-    return results
-
 @app.route('/')
 def index():
     if 'student_id' not in session:
@@ -39,7 +19,7 @@ def index():
         </form>'''
     else:
         return redirect("/home")
-
+    
 @app.route('/login', methods=['POST'])
 def login():
     username = request.form.get('student_id')
@@ -60,6 +40,27 @@ def login():
     cursor.close()
     conn.close()
     return "登入失敗，非本校學生"
+
+
+@app.route('/logout', methods=['GET', 'POST'])
+def logout():
+    # 清除会话中的用户信息
+    session.pop('student_id', None)
+    session.pop('logged_in', None)
+
+    return redirect('/')
+
+@app.route('/home')
+def home():
+    results = """
+    <p><a href="/browse">檢索課程</a></p>
+    <p><a href="/student_table_show">查詢課表</a></p>
+    <p><a href="/student_table_deleteshow">退選課程</a></p>
+    <form action="/logout" method="post">
+        <input type="submit" value="Logout">
+    </form>
+    """
+    return results
 
 @app.route('/browse', methods=['GET', 'POST'])
 def search():
