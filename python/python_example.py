@@ -5,19 +5,25 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
+    results = """
+    <p><a href="/search">檢索課程</a></p>
+    <p><a href="/student_table_search">查詢課表</a></p>
+    """
+    return results
+
+
+@app.route('/search', methods=['GET'])
+def search():
     # 建立資料庫連線
     conn = MySQLdb.connect(host="127.0.0.1",
                            user="hj",
                            passwd="test1234",
                            db="courseselection")
     
-    table = """
-    <form method="post" action="/action" >
-        文字輸出欄位：<input name="student_id">
-        <input type="submit" value="送出">
-    </form>
-    """
-
+    table = """"""
+    table += '''<form method="post" >
+        請輸入學號：<input name="student_id">
+    </form>'''
     # 創建游標
     cursor = conn.cursor()
     
@@ -46,9 +52,22 @@ def index():
     
     return table
 
-@app.route('/action', methods=['POST'])
+@app.route('/student_table_search', methods=['GET'])
 
-def action():
+def student_table_search():
+    form = """
+    <p><a href="/">回首頁</a></p>
+    <form method="post" action="/student_table_show" >
+        請輸入學號：<input name="student_id">
+        <input type="submit" value="送出">
+    </form>
+    """
+    return form
+
+@app.route('/student_table_show', methods=['POST'])
+def student_table_show():
+    table = '''<p><a href="/">回首頁</a></p>'''
+    
     # 取得輸入的學號
     student_id_value = request.form.get("student_id")
     # 建立資料庫連線
@@ -57,7 +76,7 @@ def action():
                            passwd="test1234",
                            db="courseselection")
     
-    table = ''''''
+    
     
     # 欲查詢的 query 指令
     query = "SELECT * FROM student where student_id = '%s';" % student_id_value
@@ -108,6 +127,7 @@ def action():
 
 @app.route('/enroll', methods=['POST'])
 def enroll():
+    
     # 取得請求中的學號和課程ID
     student_id = request.form.get("student_id")
     course_id = request.form.get("course_id")
@@ -121,6 +141,8 @@ def enroll():
     # 創建游標
     cursor = conn.cursor()
 
+    result = '''<p><a href="/">回首頁</a></p>'''
+    
     # 檢查學生學分是否大於30
     query_credit = "SELECT SUM(credits) FROM course_enroll ce JOIN course c ON ce.course_id = c.course_id WHERE student_id = %s;"
     cursor.execute(query_credit, (student_id,))
@@ -136,7 +158,8 @@ def enroll():
     if total_credits + course_credits > 30:
         cursor.close()
         conn.close()
-        return "Fail: Exceeds maximum credits limit (30 credits)."
+        result+= "Fail: Exceeds maximum credits limit (30 credits)."
+        return result
 
     # 檢查課程與學生是否同科系
     query_department = "SELECT department FROM student WHERE student_id = %s;"
@@ -145,7 +168,8 @@ def enroll():
     if student_department_result is None:
         cursor.close()
         conn.close()
-        return "Fail: Student not found."
+        result+= "Fail: Student not found."
+        return result
 
     student_department = student_department_result[0]
 
@@ -156,7 +180,8 @@ def enroll():
     if student_department != course_department:
         cursor.close()
         conn.close()
-        return "Fail: The student and course belong to different departments."
+        result+=  "Fail: The student and course belong to different departments."
+        return result
 
     # 加選
     query_enroll = "INSERT INTO course_enroll (student_id, course_id) VALUES (%s, %s);"
@@ -166,5 +191,5 @@ def enroll():
     cursor.close()
     conn.close()
 
-    return "Success: Course enrolled successfully."
-    
+    result+=  "Success: Course enrolled successfully."
+    return result
