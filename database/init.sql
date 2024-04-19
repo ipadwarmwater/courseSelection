@@ -78,7 +78,9 @@ INSERT INTO course (course_id, course_name, department, grade, credits, capacity
 (306, '電磁學', 'Electrical Engineering', 3, 3, 5, 0),
 (307, '數位訊號處理', 'Electrical Engineering', 1, 3, 5, 0),
 (308, '通訊原理', 'Electrical Engineering', 2, 3, 5, 0),
-(309, '微機電系統', 'Electrical Engineering', 3, 3, 5, 0);
+(309, '微機電系統', 'Electrical Engineering', 3, 3, 5, 0),
+(310, '計算機概論', 'Electrical Engineering', 1, 3, 5, 1),
+
 
 INSERT INTO course (course_id, course_name, department, grade, credits, capacity, requirement_course) VALUES
 (401, '農業生態學', 'Agronomy', 1, 3, 5, 0),
@@ -146,6 +148,12 @@ INSERT INTO course (course_id, course_name, department, grade, credits, capacity
 (907, '發展經濟學', 'Economics', 1, 3, 5, 0),
 (908, '計量經濟學', 'Economics', 2, 3, 5, 0),
 (909, '環境經濟學', 'Economics', 3, 3, 5, 0);
+
+INSERT INTO course (course_id, course_name, department, grade, credits, capacity, requirement_course) VALUES
+(1001, '高效休息法', 'General Eudcation', 0, 8, 10, 0),
+(1002, '閱讀越快樂', 'General Eudcation', 0, 4, 10, 0),
+(1003, '誇誇學導論', 'General Eudcation', 0, 5, 10, 0);
+
 
 CREATE TABLE course_schedule (
     course_id INT,
@@ -707,6 +715,29 @@ INSERT INTO course_schedule (course_id, weekday, period) VALUES
 (909, 1, 6),
 (909, 3, 7),
 (909, 5, 1);
+
+-- 高效休息法
+INSERT INTO course_schedule (course_id, weekday, period) VALUES
+(1001, 3, 1),
+(1001, 3, 2),
+(1001, 3, 3),
+(1001, 3, 4),
+(1001, 3, 5);
+
+-- 閱讀越快樂
+INSERT INTO course_schedule (course_id, weekday, period) VALUES
+(1002, 3, 6),
+(1002, 3, 7),
+(1002, 3, 8),
+(1002, 3, 9);
+
+-- 誇誇學導論
+INSERT INTO course_schedule (course_id, weekday, period) VALUES
+(1003, 0, 2),
+(1003, 0, 3),
+(1003, 0, 4),
+(1003, 1, 3),
+(1003, 1, 4);
 
 INSERT INTO course_enroll (student_id, course_id)
 SELECT s.student_id, c.course_id
