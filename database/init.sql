@@ -14,11 +14,12 @@ INSERT INTO student (student_id, student_name, department, grade) VALUES
 ('D5009548', 'Sweet Potato' , 'Computer Science'        , 2),
 ('D5452012', 'Chung, Hung'  , 'Computer Science'        , 2),
 ('D1805916', 'Sean'         , 'Computer Science'        , 2),
+('D3211302', 'Guei'         , 'Computer Science'        , 4),
+('D2573744', 'CY, Tsai'     , 'Computer Science'        , 2),
 ('D1904172', 'Katie'        , 'Electrical Engineering'  , 2),
 ('D9949956', 'Wanderer'     , 'Electrical Engineering'  , 2),
 ('D2196134', 'Moderato'     , 'Physics'                 , 2),
 ('D7350136', 'Paimberley'   , 'Chemistry'               , 2),
-('D3211302', 'Guei'         , 'Mathematics'             , 2),
 ('D6361597', 'Astrid'       , 'Law'                     , 2),
 ('D1136116', 'Ivy'          , 'Economics'               , 4),
 ('D4532771', 'Douherbo'     , 'Agronomy'                , 1);
@@ -80,7 +81,7 @@ INSERT INTO course (course_id, course_name, department, grade, credits, capacity
 (308, '通訊原理', 'Electrical Engineering', 2, 3, 5, 0),
 (309, '微機電系統', 'Electrical Engineering', 3, 3, 5, 0),
 (310, '計算機概論', 'Electrical Engineering', 1, 3, 5, 1),
-
+(311, '微機電系統', 'Electrical Engineering', 3, 3, 5, 0);
 
 INSERT INTO course (course_id, course_name, department, grade, credits, capacity, requirement_course) VALUES
 (401, '農業生態學', 'Agronomy', 1, 3, 5, 0),

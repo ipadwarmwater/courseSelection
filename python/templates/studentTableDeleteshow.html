@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>學生資訊</title>
+    <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='/style_Browse.css') }}"/>
+</head>
+<header>
+    <h1>退選課程</h1>
+</header>
+
+<body>
+    {% if student_data %}
+        <table border='1'>
+            <tr>
+                <th>學生 ID</th>
+                <th>姓名</th>
+                <th>系所</th>
+                <th>年級</th>
+                <th>學分數</th>
+            </tr>
+            {% for student in student_data %}
+            <tr>
+                <td>{{ student[0] }}</td>
+                <td>{{ student[1] }}</td>
+                <td>{{ student[2] }}</td>
+                <td>{{ student[3] }}</td>
+                <td>{{ student[4] }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        <table border='1'>
+            <tr>
+                <th>節次</th>
+                <th>星期一</th>
+                <th>星期二</th>
+                <th>星期三</th>
+                <th>星期四</th>
+                <th>星期五</th>
+                <th>星期六</th>
+                <th>星期日</th>
+            </tr>
+            {% for i in range(10) %}
+                <tr>
+                    <td>{{ i + 1 }}</td>
+                    {% for j in range(7) %}
+                        <td>
+                            {% if timetable[i][j] %}
+                                {{ timetable[i][j][1] }}
+                                <form action="/withdraw" method="post">
+                                    <input type="hidden" name="student_id" value="{{ student_id }}">
+                                    <input type="hidden" name="course_id" value="{{ timetable[i][j][0] }}">
+                                    <input type="submit" value="退選">
+                                </form>
+                            {% else %}
+                                <!-- Empty cell -->
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>查無此學號</p>
+    {% endif %}
+</body>
+<footer>
+    <p><a href="/">回首頁</a></p>
+</footer>
+</html>

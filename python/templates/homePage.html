@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>選課系統首頁</title>
+    <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='/style_home.css') }}"/>
+</head>
+<body>
+    <header>
+        <h1>選課系統</h1>
+    </header>
+
+    <div class="container">
+        <div class="function">
+            <ul>
+                <li><a href="/browse">檢索課程</a></li>
+                <li><a href="/elective_courses">可選課表</a></li>
+                <li><a href="/student_table_show">查詢課表</a></li>
+                <li><a href="/student_table_deleteshow">退選課程</a></li>
+            </ul>
+        </div>
+
+    <form method="post" action="/logout">
+        <input type="submit" name="search_button" value="Logout">
+    </form>
+    </div>
+
+    <footer>
+        © 2024 deba. All rights reserved.
+    </footer>
+</body>
+</html>
