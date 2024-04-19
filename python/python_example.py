@@ -8,6 +8,7 @@ def index():
     results = """
     <p><a href="/search">檢索課程</a></p>
     <p><a href="/student_table_search">查詢課表</a></p>
+    <p><a href="/student_table_delete">退選課程</a></p>
     """
     return results
 
@@ -125,6 +126,8 @@ def student_table_show():
     return table
 
 
+
+
 @app.route('/enroll', methods=['POST'])
 def enroll():
     
@@ -192,4 +195,134 @@ def enroll():
     conn.close()
 
     result+=  "Success: Course enrolled successfully."
+    return result
+
+
+@app.route('/student_table_delete', methods=['GET'])
+def student_table_delete():
+    form = """
+    <p><a href="/">回首頁</a></p>
+    <form method="post" action="/student_table_deleteshow" >
+        請輸入學號：<input name="student_id">
+        <input type="submit" value="送出">
+    </form>
+    """
+    return form
+
+@app.route('/student_table_deleteshow', methods=['POST'])
+def student_table_deleteshow():
+    table = '''<p><a href="/">回首頁</a></p>'''
+    
+    # 取得輸入的學號
+    student_id_value = request.form.get("student_id")
+    # 建立資料庫連線
+    conn = MySQLdb.connect(host="127.0.0.1",
+                           user="hj",
+                           passwd="test1234",
+                           db="courseselection")
+    
+    # 欲查詢的 query 指令
+    query = "SELECT * FROM student where student_id = '%s';" % student_id_value
+    # 執行查詢
+    cursor = conn.cursor()
+    cursor.execute(query)
+    student_data = cursor.fetchall()
+    table+='<tr>'
+    for des in student_data:
+        table+="<td>{}</td>".format(des)
+    table+='</tr>'
+    # 如果學生存在，則繼續查詢課表
+    if student_data:
+        query = """
+        SELECT ce.course_id, course_schedule.weekday, course_schedule.period, course.course_name 
+        FROM course_schedule 
+        INNER JOIN course ON course_schedule.course_id = course.course_id 
+        INNER JOIN course_enroll ce ON course_schedule.course_id = ce.course_id
+        WHERE ce.student_id = '%s';
+        """ % student_id_value
+        cursor.execute(query)
+        
+        timetable = [["" for _ in range(8)] for _ in range(10)]
+        table += " <table border='1'><tr><th>星期</th><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th><th>日</th></tr>"
+
+        # 將查詢結果填入課程時間二維陣列
+        for row in cursor.fetchall():
+            course_id = row[0]  # 課程ID
+            weekday = row[1]  # 星期
+            period = row[2]   # 節次
+            course_name = row[3]  # 課程名稱
+            timetable[period - 1][weekday] = (course_id, course_name)  # 存入課程ID和課程名稱的tuple
+        
+        # 根據課程時間二維陣列生成表格
+        for i in range(10):
+            table += "<tr>"
+            table += "<td>{}</td>".format(i + 1)  # 節次
+            for j in range(7):
+                course_info = timetable[i][j]
+                if course_info:
+                    course_id, course_name = course_info
+                    # 顯示課程名稱和退選按鈕
+                    table += "<td>{}</br><form action='/withdraw' method='post'><input type='hidden' name='student_id' value='{}'><input type='hidden' name='course_id' value='{}'><input type='submit' value='退選'></form></td>".format(course_name, student_id_value, course_id)
+                else:
+                    table += "<td></td>"
+            table += "</tr>"
+    else:
+        table += "<p>查無此學號</p>"
+
+    # 關閉游標和資料庫連線
+    cursor.close()
+    conn.close()
+
+    return table
+
+
+@app.route('/withdraw', methods=['POST'])
+def withdraw_course():
+    # 取得請求中的學號和課程ID
+    student_id = request.form.get("student_id")
+    course_id = request.form.get("course_id")
+
+    # 建立資料庫連線
+    conn = MySQLdb.connect(host="127.0.0.1",
+                           user="hj",
+                           passwd="test1234",
+                           db="courseselection")
+
+    # 創建游標
+    cursor = conn.cursor()
+
+    result = '''<p><a href="/">回首頁</a></p>'''
+
+    # 檢查退選後學分是否低於最低學分限制
+    query_credit = "SELECT SUM(credits) FROM course_enroll ce JOIN course c ON ce.course_id = c.course_id WHERE student_id = %s;"
+    cursor.execute(query_credit, (student_id,))
+    total_credits = cursor.fetchone()[0]
+
+    query_course_credit = "SELECT credits FROM course WHERE course_id = %s;"
+    cursor.execute(query_course_credit, (course_id,))
+    course_credits = cursor.fetchone()[0]
+
+    if total_credits - course_credits < 9:
+        cursor.close()
+        conn.close()
+        result += "不能低於9學分"
+        return result
+
+    # 如果該課程是必修課，則提出警告
+    query_requirement = "SELECT requirement_course FROM course WHERE course_id = %s;"
+    cursor.execute(query_requirement, (course_id,))
+    requirement_course = cursor.fetchone()[0]
+
+    if requirement_course == '1':
+        result += "Warning: This course is a required course. Are you sure you want to withdraw?"
+
+    # 從課程選課表中刪除該課程
+    query_withdraw = "DELETE FROM course_enroll WHERE student_id = %s AND course_id = %s;"
+    cursor.execute(query_withdraw, (student_id, course_id))
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    result += "Success: Course withdrawn successfully."
     return result
