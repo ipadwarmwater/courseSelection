@@ -329,7 +329,7 @@ def withdraw_course():
     # 創建游標
     cursor = conn.cursor()
 
-    result = '''<p><a href="/">回首頁</a></p>'''
+    result = '''<p><a href="/">回首頁</a></br><a href="/student_table_deleteshow">回退選</a></p>'''
 
     # 檢查退選後學分是否低於最低學分限制
     query_credit = "SELECT SUM(credits) FROM course_enroll ce JOIN course c ON ce.course_id = c.course_id WHERE student_id = %s;"
@@ -345,24 +345,35 @@ def withdraw_course():
         conn.close()
         result += "不能低於9學分"
         return result
+    
+    # 取得學生的年級
+    query_student_grade = "SELECT grade FROM student WHERE student_id = %s;"
+    cursor.execute(query_student_grade, (student_id,))
+    student_grade = cursor.fetchone()[0]
 
     # 如果該課程是必修課，則提出警告
-    query_requirement = "SELECT requirement_course FROM course WHERE course_id = %s;"
+    query_requirement = "SELECT requirement_course, grade FROM course WHERE course_id = %s;"
     cursor.execute(query_requirement, (course_id,))
-    requirement_course = cursor.fetchone()[0]
+    requirement_course, course_grade = cursor.fetchone()
 
-    if requirement_course == '1':
-        result += "Warning: This course is a required course. Are you sure you want to withdraw?"
+    if requirement_course == 1 and student_grade == course_grade:
+        result += "這門課是必修，退選後果自負..."
 
     # 從課程選課表中刪除該課程
     query_withdraw = "DELETE FROM course_enroll WHERE student_id =%s AND course_id = %s;"
     cursor.execute(query_withdraw, (student_id, course_id))
+
+    #計算學分數
+
+    query_s_credit = "UPDATE student INNER JOIN (SELECT student.student_id, SUM(course.credits) AS total_credits FROM student INNER JOIN course_enroll ON student.student_id = course_enroll.student_id INNER JOIN course ON course_enroll.course_id = course.course_id GROUP BY student.student_id ) AS new_credits ON student.student_id = new_credits.student_id SET student.credit = new_credits.total_credits;"
+    cursor.execute(query_s_credit)
+
     conn.commit()
 
     cursor.close()
     conn.close()
 
-    result += "Success: Course withdrawn successfully."
+    result += "退選成功"
     return result
 
 if __name__ == '__main__':
