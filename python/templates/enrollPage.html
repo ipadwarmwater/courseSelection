@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>課程加選</title>
+    <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='/style_Browse.css') }}"/>
+    <style>
+        /* 對訊息進行樣式設定 */
+        #message-container {
+            text-align: center; /* 文字水平置中 */
+            font-size: 24px; /* 字體大小 */
+            display: flex; /* 使用彈性盒子布局 */
+            justify-content: center; /* 水平置中 */
+            align-items: center; /* 垂直置中 */
+            height: 100vh; /* 將高度設為視窗高度，以使訊息垂直置中 */
+        }
+    </style>
+</head>
+<body>
+    <div id="message-container">
+        <p>{{ message }}</p>
+    </div>
+</body>
+<footer>
+    <p><a href="/">回首頁</a> | <a href="/browse">回課程檢索</a> | <a href="/elective_courses">回可選課程</a></p>
+</footer>
+</html>

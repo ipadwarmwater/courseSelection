@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>課程檢索</title>
+    <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='/style_Browse.css') }}"/>
+</head>
+<body>
+    <h1>課程檢索</h1>
+    <table border='1'>
+        <tr>
+            <th>課程 ID</th>
+            <th>課程名稱</th>
+            <th>科系</th>
+            <th>年級</th>
+            <th>學分</th>
+            <th>人數上限</th>
+            <th>人數</th>
+            <th>是否為必修</th>
+            <th></th>
+        </tr>
+        {% for course in courses %}
+        <tr>
+            {% for data in course %}
+            <td>{{ data }}</td>
+            {% endfor %}
+            <td>
+                <form action='/enroll' method='post'>
+                    <input type='hidden' name='student_id' value='{{ student_id }}'>
+                    <input type='hidden' name='course_id' value='{{ course[0] }}'>
+                    <input type='submit' value='選課'>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+<footer>
+    <p><a href="/">回首頁</a></p>
+</footer>
+</html>

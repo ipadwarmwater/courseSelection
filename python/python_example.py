@@ -1,4 +1,4 @@
-from flask import Flask, request, session ,redirect, url_for
+from flask import Flask, request, session ,redirect, render_template
 import MySQLdb
 
 app = Flask(__name__)
@@ -13,10 +13,7 @@ def connect_to_database():
 @app.route('/')
 def index():
     if 'student_id' not in session:
-        return '''<form method="post" action="/login">
-            請輸入學號：<input name="student_id">
-            <input type="submit" name="search_button" value="登入">
-        </form>'''
+        return render_template('loginPage.html')
     else:
         return redirect("/home")
     
@@ -52,16 +49,8 @@ def logout():
 
 @app.route('/home')
 def home():
-    results = """
-    <p><a href="/browse">檢索課程</a></p>
-    <p><a href="/elective_courses">可選課表</a></p>
-    <p><a href="/student_table_show">查詢課表</a></p>
-    <p><a href="/student_table_deleteshow">退選課程</a></p>
-    <form action="/logout" method="post">
-        <input type="submit" value="Logout">
-    </form>
-    """
-    return results
+    return render_template('homePage.html')
+
 
 @app.route('/browse', methods=['GET', 'POST'])
 def search():
@@ -73,8 +62,6 @@ def search():
     # 建立資料庫連線
     conn = connect_to_database()
     
-    table = """"""
-
     # 創建游標
     cursor = conn.cursor()
     
@@ -83,27 +70,13 @@ def search():
     cursor.execute(query)
     courses = cursor.fetchall()
 
-    # 生成HTML表格來顯示課程表
-    table += "<table border='1'><tr><th>課程 ID</th><th>課程名稱</th><th>科系</th><th>年級</th><th>學分</th><th>人數上限</th><th>人數</th><th>是否為必修</th><th></th></tr>"
-    for course in courses:
-        table += "<tr>"
-        for data in course:
-            table += "<td>{}</td>".format(data)
-        
-        # 在每個課程資料列後面添加一個按鈕
-        table += "<td><form action='/enroll' method='post'><input type='hidden' name='student_id' value='{}'><input type='hidden' name='course_id' value='{}'><input type='submit' value='選課'></form></td>".format(student_id, course[0])
-
-        table += "</tr>"
-
-    table += "</table>"
-
     # 關閉游標和資料庫連線
     cursor.close()
     conn.close()
     
-    return table
+    return render_template('browsePage.html', student_id=student_id, courses=courses)
 
-#可選課表
+# 可選課表
 @app.route('/elective_courses', methods=['GET', 'POST'])
 def elective():
     if 'student_id' not in session:
@@ -114,35 +87,19 @@ def elective():
     # 建立資料庫連線
     conn = connect_to_database()
         
-    table = """"""
-
     # 創建游標
     cursor = conn.cursor()
         
     # 查詢所有課程表
-    query = "SELECT course_id, course_name, department, grade, credits, capacity, requirement_course FROM course WHERE department = (SELECT department FROM student WHERE student_id = %s) OR department = 'General Education';"
+    query = "SELECT course_id, course_name, department, grade, credits, capacity, requirement_course FROM course WHERE department = (SELECT department FROM student WHERE student_id = %s) OR department = 'General Eudcation';"
     cursor.execute(query, (student_id,))
     courses = cursor.fetchall()
-
-    # 生成HTML表格來顯示課程表
-    table += "<table border='1'><tr><th>課程 ID</th><th>課程名稱</th><th>科系</th><th>年級</th><th>學分</th><th>人數上限</th><th>人數</th><th>是否為必修</th><th></th></tr>"
-    for course in courses:
-        table += "<tr>"
-        for data in course:
-            table += "<td>{}</td>".format(data)
-            
-        # 在每個課程資料列後面添加一個按鈕
-        table += "<td><form action='/enroll' method='post'><input type='hidden' name='student_id' value='{}'><input type='hidden' name='course_id' value='{}'><input type='submit' value='選課'></form></td>".format(student_id, course[0])
-
-        table += "</tr>"
-
-    table += "</table>"
 
     # 關閉游標和資料庫連線
     cursor.close()
     conn.close()
         
-    return table
+    return render_template('electiveCoursesPage.html', courses=courses, student_id=student_id)
 
 
 @app.route('/enroll', methods=['POST'])
@@ -161,7 +118,7 @@ def enroll():
     # 創建游標
     cursor = conn.cursor()
 
-    result = '''<p><a href="/">回首頁</a></br><a href="/browse">回課程檢索</a></br><a href="/elective_courses">回可選課表</a></p>'''
+    message = ""  # 初始化消息變數
     
     # 檢查是否衝堂
     query_student_schedule = """
@@ -187,16 +144,16 @@ def enroll():
             if student_time == course_time:
                 cursor.close()
                 conn.close()
-                result+= "錯誤：衝堂 "+str(student_time[0]+1)
-                return result
+                message = "錯誤：衝堂 " + str(student_time[0]+1)
+                return render_template('EnrollPage.html', message=message)
 
     # 檢查學生是否已選這堂課
     query_select = "SELECT COUNT(*) FROM course_enroll WHERE course_id = %s AND student_id = %s"
     cursor.execute(query_select, (course_id, student_id))
     count = cursor.fetchone()[0]
     if count > 0:
-        result += "錯誤：已選此課程"
-        return result
+        message = "錯誤：已選此課程"
+        return render_template('enrollPage.html', message=message)
 
     # 檢查學生學分是否大於30
     query_credit = "SELECT SUM(credits) FROM course_enroll ce JOIN course c ON ce.course_id = c.course_id WHERE student_id = %s;"
@@ -213,8 +170,8 @@ def enroll():
     if total_credits + course_credits > 30:
         cursor.close()
         conn.close()
-        result+= "錯誤：超過學分上限(30學分)"
-        return result
+        message = "錯誤：超過學分上限(30學分)"
+        return render_template('EnrollPage.html', message=message)
 
     # 檢查課程與學生是否同科系
     query_department = "SELECT department FROM student WHERE student_id = %s;"
@@ -223,8 +180,8 @@ def enroll():
     if student_department_result is None:
         cursor.close()
         conn.close()
-        result+= "錯誤：查無此人"
-        return result
+        message = "錯誤：查無此人"
+        return render_template('EnrollPage.html', message=message)
 
     student_department = student_department_result[0]
 
@@ -232,12 +189,11 @@ def enroll():
     cursor.execute(query_course_department, (course_id,))
     course_department = cursor.fetchone()[0]
 
-    if student_department != course_department and course_department!= 'General Eudcation':
+    if student_department != course_department and course_department != 'General Eudcation':
         cursor.close()
         conn.close()
-        
-        result+=  "錯誤：學生和課程分屬不同系所"
-        return result
+        message = "錯誤：學生和課程分屬不同系所"
+        return render_template('EnrollPage.html', message=message)
 
     # 加選
     query_enroll = "INSERT INTO course_enroll (student_id, course_id) VALUES (%s,%s);"
@@ -253,9 +209,8 @@ def enroll():
     cursor.close()
     conn.close()
 
-    
-    result+=  "成功：課程加選成功"
-    return result
+    message = "成功：課程加選成功"
+    return render_template('EnrollPage.html', message=message)
 
 @app.route('/student_table_show', methods=['POST', 'GET'])
 def student_table_show():
@@ -263,8 +218,6 @@ def student_table_show():
         return redirect("/")
     
     student_id = session['student_id']
-    
-    table = '''<p><a href="/">回首頁</a></p>'''
     
     # 建立資料庫連線
     conn = connect_to_database()
@@ -275,10 +228,9 @@ def student_table_show():
     cursor = conn.cursor()
     cursor.execute(query, (student_id,))
     student_data = cursor.fetchall()
-    table+='<tr>'
-    for des in student_data:
-        table+="<td>{}</td>".format(des)
-    table+='</tr>'
+
+    timetable = [["" for _ in range(8)] for _ in range(10)]
+
     # 如果學生存在，則繼續查詢課表
     if student_data:
         query = """
@@ -289,31 +241,18 @@ def student_table_show():
         """ 
         cursor.execute(query, (student_id,))
         
-        timetable = [["" for _ in range(8)] for _ in range(10)]
-        table += " <table border='1'><tr><th>星期</th><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th><th>日</th></tr>"
-
         # 將查詢結果填入課程時間二維陣列
         for row in cursor.fetchall():
             weekday = row[0]  # 星期
             period = row[1]   # 節次
             course_name = row[2]  # 課程名稱
             timetable[period - 1][weekday] = course_name
-        
-        # 根據課程時間二維陣列生成表格
-        for i in range(10):
-            table += "<tr>"
-            table += "<td>{}</td>".format(i + 1)  # 節次
-            for j in range(7):
-                table += "<td>{}</td>".format(timetable[i][j])  # 課程名稱
-            table += "</tr>"
-    else:
-        table += "<p>查無此學號</p>"
 
     # 關閉游標和資料庫連線
     cursor.close()
     conn.close()
 
-    return table
+    return render_template('studentTimeTablePage.html', student_data=student_data, timetable=timetable)
 
 
 @app.route('/student_table_deleteshow', methods=['GET', 'POST'])
@@ -323,20 +262,18 @@ def student_table_deleteshow():
     
     student_id = session['student_id']
     
-    table = '''<p><a href="/">回首頁</a></p>'''
     # 建立資料庫連線
     conn = connect_to_database()
-
+    
     # 欲查詢的 query 指令
     query = "SELECT * FROM student WHERE student_id = %s;"
     # 執行查詢
     cursor = conn.cursor()
     cursor.execute(query, (student_id,))
     student_data = cursor.fetchall()
-    table+='<tr>'
-    for des in student_data:
-        table+="<td>{}</td>".format(des)
-    table+='</tr>'
+
+    timetable = [["" for _ in range(8)] for _ in range(10)]
+
     # 如果學生存在，則繼續查詢課表
     if student_data:
         query = """
@@ -347,10 +284,7 @@ def student_table_deleteshow():
         WHERE ce.student_id = %s;
         """ 
         cursor.execute(query, (student_id,))
-
-        timetable = [["" for _ in range(8)] for _ in range(10)]
-        table += " <table border='1'><tr><th>星期</th><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th><th>日</th></tr>"
-
+        
         # 將查詢結果填入課程時間二維陣列
         for row in cursor.fetchall():
             course_id = row[0]  # 課程ID
@@ -359,27 +293,11 @@ def student_table_deleteshow():
             course_name = row[3]  # 課程名稱
             timetable[period - 1][weekday] = (course_id, course_name)  # 存入課程ID和課程名稱的tuple
 
-        # 根據課程時間二維陣列生成表格
-        for i in range(10):
-            table += "<tr>"
-            table += "<td>{}</td>".format(i + 1)  # 節次
-            for j in range(7):
-                course_info = timetable[i][j]
-                if course_info:
-                    course_id, course_name = course_info
-                    # 顯示課程名稱和退選按鈕
-                    table += "<td>{}</br><form action='/withdraw' method='post'><input type='hidden' name='student_id' value='{}'><input type='hidden' name='course_id' value='{}'><input type='submit' value='退選'></form></td>".format(course_name, student_id, course_id)
-                else:
-                    table += "<td></td>"
-            table += "</tr>"
-    else:
-        table += "<p>查無此學號</p>"
-
     # 關閉游標和資料庫連線
     cursor.close()
     conn.close()
 
-    return table
+    return render_template('studentTableDeleteshow.html', student_data=student_data, timetable=timetable)
 
 
 @app.route('/withdraw', methods=['POST'])
@@ -398,7 +316,7 @@ def withdraw_course():
     # 創建游標
     cursor = conn.cursor()
 
-    result = '''<p><a href="/">回首頁</a></br><a href="/student_table_deleteshow">回退選</a></p>'''
+    result = ''
 
     # 檢查退選後學分是否低於最低學分限制
     query_credit = "SELECT SUM(credits) FROM course_enroll ce JOIN course c ON ce.course_id = c.course_id WHERE student_id = %s;"
@@ -407,43 +325,49 @@ def withdraw_course():
 
     query_course_credit = "SELECT credits FROM course WHERE course_id = %s;"
     cursor.execute(query_course_credit, (course_id,))
-    course_credits = cursor.fetchone()[0]
+    course_credits_result = cursor.fetchone()
 
-    if total_credits - course_credits < 9:
+    if course_credits_result is not None:
+        course_credits = course_credits_result[0]
+
+        if total_credits - course_credits < 9:
+            cursor.close()
+            conn.close()
+            result += "不能低於9學分"
+            return render_template('withdrawPage.html', result=result)
+    
+        # 取得學生的年級
+        query_student_grade = "SELECT grade FROM student WHERE student_id = %s;"
+        cursor.execute(query_student_grade, (student_id,))
+        student_grade = cursor.fetchone()[0]
+
+        # 如果該課程是必修課，則提出警告
+        query_requirement = "SELECT requirement_course, grade FROM course WHERE course_id = %s;"
+        cursor.execute(query_requirement, (course_id,))
+        requirement_course, course_grade = cursor.fetchone()
+
+        if requirement_course == 1 and student_grade == course_grade:
+            result += "這門課是必修，退選後果自負..."
+
+        # 從課程選課表中刪除該課程
+        query_withdraw = "DELETE FROM course_enroll WHERE student_id =%s AND course_id = %s;"
+        cursor.execute(query_withdraw, (student_id, course_id))
+
+        #計算學分數
+        query_s_credit = "UPDATE student INNER JOIN (SELECT student.student_id, SUM(course.credits) AS total_credits FROM student INNER JOIN course_enroll ON student.student_id = course_enroll.student_id INNER JOIN course ON course_enroll.course_id = course.course_id GROUP BY student.student_id ) AS new_credits ON student.student_id = new_credits.student_id SET student.credit = new_credits.total_credits;"
+        cursor.execute(query_s_credit)
+
+        conn.commit()
+
         cursor.close()
         conn.close()
-        result += "不能低於9學分"
-        return result
-    
-    # 取得學生的年級
-    query_student_grade = "SELECT grade FROM student WHERE student_id = %s;"
-    cursor.execute(query_student_grade, (student_id,))
-    student_grade = cursor.fetchone()[0]
 
-    # 如果該課程是必修課，則提出警告
-    query_requirement = "SELECT requirement_course, grade FROM course WHERE course_id = %s;"
-    cursor.execute(query_requirement, (course_id,))
-    requirement_course, course_grade = cursor.fetchone()
+        result += "退選成功"
+    else:
+        result += "課程不存在"
 
-    if requirement_course == 1 and student_grade == course_grade:
-        result += "這門課是必修，退選後果自負..."
+    return render_template('WithdrawPage.html', result=result)
 
-    # 從課程選課表中刪除該課程
-    query_withdraw = "DELETE FROM course_enroll WHERE student_id =%s AND course_id = %s;"
-    cursor.execute(query_withdraw, (student_id, course_id))
-
-    #計算學分數
-
-    query_s_credit = "UPDATE student INNER JOIN (SELECT student.student_id, SUM(course.credits) AS total_credits FROM student INNER JOIN course_enroll ON student.student_id = course_enroll.student_id INNER JOIN course ON course_enroll.course_id = course.course_id GROUP BY student.student_id ) AS new_credits ON student.student_id = new_credits.student_id SET student.credit = new_credits.total_credits;"
-    cursor.execute(query_s_credit)
-
-    conn.commit()
-
-    cursor.close()
-    conn.close()
-
-    result += "退選成功"
-    return result
 
 
 if __name__ == '__main__':

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>課程退選</title>
+    <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='/style_Browse.css') }}"/>
+    <style>
+        /* 對訊息進行樣式設定 */
+        #message-container {
+            text-align: center; /* 文字水平置中 */
+            font-size: 24px; /* 字體大小 */
+            display: flex; /* 使用彈性盒子布局 */
+            justify-content: center; /* 水平置中 */
+            align-items: center; /* 垂直置中 */
+            height: 90vh; /* 將高度設為視窗高度，以使訊息垂直置中 */
+        }
+    </style>
+</head>
+<header>
+    <h1>退選結果</h1>
+</header>
+<body>
+    <script>
+        // 使用 JavaScript 在頁面載入後顯示彈出視窗
+        window.onload = function() {
+            // 從後端傳遞的 result 變數顯示在彈出視窗中
+            var result = "{{ result }}";
+            if (result === "這門課是必修，退選後果自負...退選成功") {
+                alert("這門課是必修，退選後果自負...");
+            }
+        };
+    </script>
+    <div id="message-container">
+        <p>{{ result }}</p>
+    </div>
+</body>
+<footer>
+    <p><a href="/">回首頁</a> | <a href="/student_table_deleteshow">回退選</a></p>
+</footer>
+</html>
