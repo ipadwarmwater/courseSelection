@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>學生資訊</title>
     <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='/style_Browse.css') }}"/>
@@ -10,7 +11,6 @@
 </header>
 
 <body>
-    {% if student_data %}
         <table border='1'>
             <tr>
                 <th>學生 ID</th>
@@ -49,9 +49,25 @@
                 </tr>
             {% endfor %}
         </table>
-    {% else %}
-        <p>查無此學號</p>
-    {% endif %}
+        <table border='1'>
+            <tr>
+                <th>課程 ID</th>
+                <th>課程名稱</th>
+                <th>科系</th>
+                <th>年級</th>
+                <th>學分</th>
+                <th>人數上限</th>
+                <th>人數</th>
+                <th>是否為必修</th>
+                <th></th>
+            </tr>
+            {% for course in courses %}
+            <tr>
+                {% for data in course %}
+                <td>{{ data }}</td>
+                {% endfor %}
+            {% endfor %}
+
 </body>
 <footer>
     <p><a href="/">回首頁</a></p>

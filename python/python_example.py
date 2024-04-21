@@ -3,7 +3,6 @@ import MySQLdb
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
-
 def connect_to_database():
     return MySQLdb.connect(host="127.0.0.1",
                            user="hj",
@@ -65,8 +64,11 @@ def search():
     # 創建游標
     cursor = conn.cursor()
     
-    # 查詢所有課程表
-    query = "SELECT course.course_id, course.course_name, course.department, course.grade, course.credits, course.capacity, count(course_enroll.course_id), course.requirement_course  FROM course left join course_enroll on course.course_id = course_enroll.course_id group by course.course_id;"
+    # 查詢所有課程
+    query = """SELECT course.course_id, course.course_name, course.department, course.grade, course.credits, course.capacity, count(course_enroll.course_id), course.requirement_course  
+                FROM course LEFT JOIN course_enroll 
+                ON course.course_id = course_enroll.course_id 
+                GROUP BY course.course_id;"""
     cursor.execute(query)
     courses = cursor.fetchall()
 
@@ -90,8 +92,11 @@ def elective():
     # 創建游標
     cursor = conn.cursor()
         
-    # 查詢所有課程表
-    query = "SELECT course_id, course_name, department, grade, credits, capacity, requirement_course FROM course WHERE department = (SELECT department FROM student WHERE student_id = %s) OR department = 'General Eudcation';"
+    # 查詢可選課程表
+    query = """SELECT course_id, course_name, department, grade, credits, capacity, requirement_course 
+                FROM course 
+                WHERE department = (SELECT department FROM student WHERE student_id = %s) 
+                OR department = 'General Eudcation';"""
     cursor.execute(query, (student_id,))
     courses = cursor.fetchall()
 
@@ -119,7 +124,38 @@ def enroll():
     cursor = conn.cursor()
 
     message = ""  # 初始化消息變數
+
+    # 檢查課程與學生是否同科系
+    query_department = "SELECT department FROM student WHERE student_id = %s;"
+    cursor.execute(query_department, (student_id,))
+    student_department_result = cursor.fetchone()
+
+    student_department = student_department_result[0]
+
+    query_course_department = "SELECT department FROM course WHERE course_id = %s;"
+    cursor.execute(query_course_department, (course_id,))
+    course_department = cursor.fetchone()[0]
+
+    if student_department != course_department and course_department != 'General Eudcation':
+        cursor.close()
+        conn.close()
+        message = "錯誤：學生和課程分屬不同系所"
+        return render_template('EnrollPage.html', message=message)
     
+    # 檢查人數是否已滿
+    query_course_capacity ="SELECT capacity FROM course WHERE course_id = %s;"
+    cursor.execute(query_course_capacity, (course_id,))
+    course_capacity = cursor.fetchone()[0]
+    query_course_student_count ="SELECT count(course_id) FROM course_enroll WHERE course_id = %s;"
+    cursor.execute(query_course_student_count, (course_id,))
+    course_student_count = cursor.fetchone()[0]
+    print(course_capacity, course_student_count)
+    if course_capacity <= course_student_count:
+        message = "錯誤：課程人數已滿"
+        cursor.close()
+        conn.close()
+        return render_template('EnrollPage.html', message=message)
+
     # 檢查是否衝堂
     query_student_schedule = """
         SELECT cs.weekday, cs.period 
@@ -130,29 +166,31 @@ def enroll():
     cursor.execute(query_student_schedule, (student_id,))
     student_schedule = cursor.fetchall()
 
-    query_course_schedule = """
-        SELECT weekday, period 
-        FROM course_schedule 
-        WHERE course_id = %s;
-    """
+    query_course_schedule = "SELECT weekday, period FROM course_schedule WHERE course_id = %s;"
     cursor.execute(query_course_schedule, (course_id,))
     course_schedule = cursor.fetchall()
-
     # 比較學生已選課程時間與欲選課程時間
     for student_time in student_schedule:
         for course_time in course_schedule:
             if student_time == course_time:
                 cursor.close()
                 conn.close()
-                message = "錯誤：衝堂 " + str(student_time[0]+1)
+                message = "錯誤：衝堂 " +"星期"+ str(student_time[0]+1)+"第"+str(student_time[1])+"堂"
                 return render_template('EnrollPage.html', message=message)
 
-    # 檢查學生是否已選這堂課
-    query_select = "SELECT COUNT(*) FROM course_enroll WHERE course_id = %s AND student_id = %s"
+    # 檢查學生是否已選這堂課(相同名稱的課程)
+    query_select = """
+        SELECT COUNT(*)
+        FROM course_enroll ce
+        INNER JOIN course c ON ce.course_id = c.course_id
+        WHERE c.course_name = (SELECT course_name FROM course WHERE course_id = %s)
+        AND ce.student_id = %s
+    """
     cursor.execute(query_select, (course_id, student_id))
     count = cursor.fetchone()[0]
+
     if count > 0:
-        message = "錯誤：已選此課程"
+        message = "錯誤：已選擇相同名稱的課程"
         return render_template('enrollPage.html', message=message)
 
     # 檢查學生學分是否大於30
@@ -173,28 +211,6 @@ def enroll():
         message = "錯誤：超過學分上限(30學分)"
         return render_template('EnrollPage.html', message=message)
 
-    # 檢查課程與學生是否同科系
-    query_department = "SELECT department FROM student WHERE student_id = %s;"
-    cursor.execute(query_department, (student_id,))
-    student_department_result = cursor.fetchone()
-    if student_department_result is None:
-        cursor.close()
-        conn.close()
-        message = "錯誤：查無此人"
-        return render_template('EnrollPage.html', message=message)
-
-    student_department = student_department_result[0]
-
-    query_course_department = "SELECT department FROM course WHERE course_id = %s;"
-    cursor.execute(query_course_department, (course_id,))
-    course_department = cursor.fetchone()[0]
-
-    if student_department != course_department and course_department != 'General Eudcation':
-        cursor.close()
-        conn.close()
-        message = "錯誤：學生和課程分屬不同系所"
-        return render_template('EnrollPage.html', message=message)
-
     # 加選
     query_enroll = "INSERT INTO course_enroll (student_id, course_id) VALUES (%s,%s);"
     cursor.execute(query_enroll, (student_id, course_id))
@@ -202,7 +218,16 @@ def enroll():
 
     #計算學分數
 
-    query_s_credit = "UPDATE student INNER JOIN (SELECT student.student_id, SUM(course.credits) AS total_credits FROM student INNER JOIN course_enroll ON student.student_id = course_enroll.student_id INNER JOIN course ON course_enroll.course_id = course.course_id GROUP BY student.student_id ) AS new_credits ON student.student_id = new_credits.student_id SET student.credit = new_credits.total_credits;"
+    query_s_credit = """UPDATE student
+                        JOIN (
+                            SELECT s.student_id, SUM(c.credits) AS total_credits 
+                            FROM student s
+                            JOIN course_enroll ce ON s.student_id = ce.student_id 
+                            JOIN course c ON ce.course_id = c.course_id 
+                            GROUP BY s.student_id
+                        ) AS new_credits 
+                        ON student.student_id = new_credits.student_id 
+                        SET student.credit = new_credits.total_credits;"""
     cursor.execute(query_s_credit)
     conn.commit()
 
@@ -231,28 +256,39 @@ def student_table_show():
 
     timetable = [["" for _ in range(8)] for _ in range(10)]
 
-    # 如果學生存在，則繼續查詢課表
-    if student_data:
-        query = """
+    # 查詢課表
+    query = """
         SELECT course_schedule.weekday, course_schedule.period, course.course_name 
         FROM course_schedule 
         INNER JOIN course ON course_schedule.course_id = course.course_id 
         WHERE course_schedule.course_id IN (SELECT course_id FROM course_enroll WHERE student_id = %s);
         """ 
-        cursor.execute(query, (student_id,))
+    cursor.execute(query, (student_id,))
         
-        # 將查詢結果填入課程時間二維陣列
-        for row in cursor.fetchall():
-            weekday = row[0]  # 星期
-            period = row[1]   # 節次
-            course_name = row[2]  # 課程名稱
-            timetable[period - 1][weekday] = course_name
+    # 將查詢結果填入課程時間二維陣列
+    for row in cursor.fetchall():
+        weekday = row[0]  # 星期
+        period = row[1]   # 節次
+        course_name = row[2]  # 課程名稱
+        timetable[period - 1][weekday] = course_name
+
+    #查詢課程詳細資料
+    # 查詢課表
+    query = """
+        SELECT c.course_id, c.course_name, c.department, c.grade, c.credits, c.capacity, COUNT(ce.course_id), c.requirement_course 
+        FROM course_enroll ce
+        INNER JOIN course c ON ce.course_id = c.course_id 
+        WHERE ce.student_id = %s
+        GROUP BY c.course_id;
+        """ 
+    cursor.execute(query, (student_id,))
+    courses = cursor.fetchall()
 
     # 關閉游標和資料庫連線
     cursor.close()
     conn.close()
 
-    return render_template('studentTimeTablePage.html', student_data=student_data, timetable=timetable)
+    return render_template('studentTimeTablePage.html', student_data=student_data, timetable=timetable, courses = courses)
 
 
 @app.route('/student_table_deleteshow', methods=['GET', 'POST'])
@@ -275,24 +311,23 @@ def student_table_deleteshow():
     timetable = [["" for _ in range(8)] for _ in range(10)]
 
     # 如果學生存在，則繼續查詢課表
-    if student_data:
-        query = """
+    query = """
         SELECT ce.course_id, course_schedule.weekday, course_schedule.period, course.course_name 
         FROM course_schedule 
         INNER JOIN course ON course_schedule.course_id = course.course_id 
         INNER JOIN course_enroll ce ON course_schedule.course_id = ce.course_id
         WHERE ce.student_id = %s;
         """ 
-        cursor.execute(query, (student_id,))
+    cursor.execute(query, (student_id,))
         
-        # 將查詢結果填入課程時間二維陣列
-        for row in cursor.fetchall():
-            course_id = row[0]  # 課程ID
-            weekday = row[1]  # 星期
-            period = row[2]   # 節次
-            course_name = row[3]  # 課程名稱
-            timetable[period - 1][weekday] = (course_id, course_name)  # 存入課程ID和課程名稱的tuple
-
+    # 將查詢結果填入課程時間二維陣列
+    for row in cursor.fetchall():
+        course_id = row[0]  # 課程ID
+        weekday = row[1]  # 星期
+        period = row[2]   # 節次
+        course_name = row[3]  # 課程名稱
+        timetable[period - 1][weekday] = (course_id, course_name)  # 存入課程ID和課程名稱的tuple
+    
     # 關閉游標和資料庫連線
     cursor.close()
     conn.close()
@@ -354,9 +389,17 @@ def withdraw_course():
         cursor.execute(query_withdraw, (student_id, course_id))
 
         #計算學分數
-        query_s_credit = "UPDATE student INNER JOIN (SELECT student.student_id, SUM(course.credits) AS total_credits FROM student INNER JOIN course_enroll ON student.student_id = course_enroll.student_id INNER JOIN course ON course_enroll.course_id = course.course_id GROUP BY student.student_id ) AS new_credits ON student.student_id = new_credits.student_id SET student.credit = new_credits.total_credits;"
+        query_s_credit = """UPDATE student
+                        JOIN (
+                            SELECT s.student_id, SUM(c.credits) AS total_credits 
+                            FROM student s
+                            JOIN course_enroll ce ON s.student_id = ce.student_id 
+                            JOIN course c ON ce.course_id = c.course_id 
+                            GROUP BY s.student_id
+                        ) AS new_credits 
+                        ON student.student_id = new_credits.student_id 
+                        SET student.credit = new_credits.total_credits;"""
         cursor.execute(query_s_credit)
-
         conn.commit()
 
         cursor.close()

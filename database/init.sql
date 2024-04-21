@@ -84,13 +84,13 @@ INSERT INTO course (course_id, course_name, department, grade, credits, capacity
 (311, '微機電系統', 'Electrical Engineering', 3, 3, 5, 0);
 
 INSERT INTO course (course_id, course_name, department, grade, credits, capacity, requirement_course) VALUES
-(401, '農業生態學', 'Agronomy', 1, 3, 5, 0),
+(401, '農業生態學', 'Agronomy', 1, 3, 5, 1),
 (402, '農產品加工學', 'Agronomy', 2, 3, 5, 0),
 (403, '作物栽培學', 'Agronomy', 3, 3, 5, 0),
-(404, '土壤學', 'Agronomy', 1, 3, 5, 0),
+(404, '土壤學', 'Agronomy', 1, 3, 5, 1),
 (405, '植物保護學', 'Agronomy', 2, 3, 5, 0),
 (406, '農業經濟學', 'Agronomy', 3, 3, 5, 0),
-(407, '園藝學', 'Agronomy', 1, 3, 5, 0),
+(407, '園藝學', 'Agronomy', 1, 3, 5, 1),
 (408, '水稻學', 'Agronomy', 2, 3, 5, 0),
 (409, '果樹學', 'Agronomy', 3, 3, 5, 0),
 (410, '畜牧學', 'Agronomy', 3, 3, 5, 0);
@@ -115,7 +115,7 @@ INSERT INTO course (course_id, course_name, department, grade, credits, capacity
 (606, '生物化學', 'Chemistry', 3, 3, 5, 0),
 (607, '材料化學', 'Chemistry', 1, 3, 5, 0),
 (608, '光化學', 'Chemistry', 2, 3, 5, 0),
-(69, '電化學', 'Chemistry', 3, 3, 5, 0);
+(609, '電化學', 'Chemistry', 3, 3, 5, 0);
 
 INSERT INTO course (course_id, course_name, department, grade, credits, capacity, requirement_course) VALUES
 (701, '微積分', 'Mathematics', 1, 3, 5, 0),

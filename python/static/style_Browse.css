@@ -1,9 +1,8 @@
 body {
     font-family: Arial, sans-serif;
     background-color: #f2f2f2;
-    padding-bottom: 10px;
+    padding-bottom: 70px; /* 在底部空出足夠的空間 */
     margin: 0;
-
 }
 
 h1 {
@@ -12,7 +11,7 @@ h1 {
 
 table {
     width: 80%; 
-    margin: 0 auto; 
+    margin: 20px auto; /* 讓表格水平居中並在上方增加一些 margin */
     border-collapse: collapse;
     margin-top: 20px;
 }
@@ -50,11 +49,11 @@ input[type="submit"]:hover {
 }
 
 footer {
-    background-color: #333; /* 背景色設定為深色 */
-    color: #fff; /* 文字顏色設定為白色 */
-    text-align: center; /* 將文字置中 */
-    padding: 5px 0; /* 上下各增加 5px 的內邊距 */
-    position: fixed;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    padding: 5px 0;
+    position: fixed; /* 將 footer 的定位改為固定定位 */
     bottom: 0;
     width: 100%;
 }
